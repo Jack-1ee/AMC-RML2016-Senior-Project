@@ -1,35 +1,14 @@
-import pickle
 import numpy as np
 import tensorflow as tf
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
+from data_utils import load_and_preprocess
+from pathlib import Path
 
-#1.I/Q 訊號預處理 (正規化) 
+BASE_DIR = Path(__file__).resolve().parent.parent #回到根目錄CODE
 
-def load_and_preprocess(file_path, snr_threshold = 10): #SNR門檻10dB
-    with open(file_path, 'rb') as f: 
-        raw_data = pickle.load(f, encoding='latin1') #py3讀py2的pickle
-    
-    X, lbl = [], [] #x:訊號,lbl:標籤
-    for (mod, snr) in raw_data.keys():
-        if snr >= snr_threshold:  #僅選取SNR>=10dB
-            X.append(raw_data[(mod, snr)])
-            for _ in range(raw_data[(mod, snr)].shape[0]): #取得樣本總數
-                lbl.append(mod)
-    
-    X = np.vstack(X)               #(樣本數, IQ通道, 128採樣點)
-    X = np.transpose(X, (0, 2, 1)) #轉為 (樣本數, 128, 2)
-    
-    #L2 F範數正規化：確保每個樣本能量一致
-    for i in range(X.shape[0]):
-        norm = np.linalg.norm(X[i], 'fro') #Frobenius
-        X[i] = X[i] / (norm + 1e-8) #避免除以零
-    
-    return X, lbl
+#資料分割 (80% Train / 20% Test)
 
-#2. 資料分割 (80% Train / 20% Test)
-
-print("正在讀取並處理資料...")
 X, lbl = load_and_preprocess('RML2016.10a_dict.pkl')
 
 #標籤轉換
@@ -42,8 +21,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 )
 print(f"訓練樣本: {X_train.shape}, 測試樣本: {X_test.shape}")
 
-#3. Keras Training 與 基準準確率
-
+#Keras Training與基準準確率
 # 1D CNN
 model = tf.keras.Sequential([
     tf.keras.layers.Input(shape=(128, 2)), #接收 長度128 IQ通道2
@@ -55,12 +33,11 @@ model = tf.keras.Sequential([
 ])
 
 model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy']) #adam 自動調整學習率, 計算損失函數
-
-print("開始訓練基準模型...")
 model.fit(X_train, y_train, epochs=10, batch_size=32, validation_split=0.1) #學習10遍 32筆修正一次 10%訓練資料作驗證
 
-#獲取最終準確率
-loss, accuracy = model.evaluate(X_test, y_test)
-print(f"\n 基準準確率 (Benchmark Accuracy): {accuracy*100:.2f}%")
+#儲存產出物
+model.save(BASE_DIR / 'best_model.h5') #儲存模型
+np.save(BASE_DIR / 'X_test_sample.npy', X_test[:10]) #儲存10筆測試樣本
+np.save(BASE_DIR / 'y_test_sample.npy', y_test[:10]) #儲存10筆測試標籤 (one-hot格式)
+print("訓練完成，已儲存模型與測試樣本。")
 
-#python train_amc.py

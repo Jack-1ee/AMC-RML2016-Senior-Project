@@ -4,6 +4,7 @@
 # 忽略 Python 快取
 __pycache__/
 *.pyc
+*.npy
 
 # 忽略虛擬環境 (如果有用到的話)
 venv/

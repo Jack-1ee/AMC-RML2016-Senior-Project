@@ -42,7 +42,6 @@ def export_to_header(model, X_sample, y_sample, filename=BASE_DIR / 'model_param
 
         # 匯出對應的正確標籤 (Index)
         true_label = np.argmax(y_sample[0]) #找one-hot最大 確定答案
-
         f.write(f"const int test_target_label = {true_label};\n\n") #寫入標準答案
         
         f.write("#endif\n")

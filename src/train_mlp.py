@@ -17,11 +17,12 @@ y_val = np.load(DATA_DIR / 'y_val.npy')
 model = tf.keras.Sequential([
     #MLP最大致命傷 展平破壞了I/Q結構
     tf.keras.layers.Flatten(input_shape=(2, 128, 1)), 
-    tf.keras.layers.Dense(512, activation='relu'),
+    tf.keras.layers.Dense(2048, activation='relu'),
+    tf.keras.layers.Dropout(0.5),
+    tf.keras.layers.Dense(1024, activation='relu'),
     tf.keras.layers.Dropout(0.5),
     tf.keras.layers.Dense(256, activation='relu'),
     tf.keras.layers.Dropout(0.5),
-    tf.keras.layers.Dense(128, activation='relu'),
     tf.keras.layers.Dense(11, activation='softmax')
 ])
 
